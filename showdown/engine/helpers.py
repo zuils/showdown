@@ -1,5 +1,6 @@
 import math
 import constants
+import config
 
 from data import all_move_json
 
@@ -157,9 +158,11 @@ def update_stats_from_nature(stats, nature):
 
     return new_stats
 
-
 def common_pkmn_stat_calc(stat: int, iv: int, ev: int, level: int):
-    return math.floor(((2 * stat + iv + math.floor(ev / 4)) * level) / 100)
+    if "gen1" in config.pokemon_mode or "gen2" in config.pokemon_mode:
+        return math.floor((((stat + math.floor(iv / 2)) * 2 + math.floor(ev / 4)) * level) / 100)
+    else:
+        return math.floor(((2 * stat + iv + math.floor(ev / 4)) * level) / 100)
 
 
 def calculate_stats(base_stats, level, ivs=(31,) * 6, evs=(85,) * 6, nature='serious'):

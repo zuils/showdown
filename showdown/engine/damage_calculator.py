@@ -2,7 +2,10 @@ from copy import copy
 from copy import deepcopy
 
 import constants
+import config
 from data import all_move_json
+
+
 
 
 pokemon_type_indicies = {
@@ -43,17 +46,16 @@ damage_multipication_array = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1/2, 0, 1, 1,
                               [1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1/2, 1, 1, 1, 1, 0, 1/2, 1, 1],
                               [1, 1/2, 1, 1, 2, 1, 1/2, 1/2, 1, 1/2, 2, 1, 1, 1/2, 1, 2, 1/2, 1/2, 1],
                               [1, 2, 1, 1, 1, 2, 1/2, 1, 1/2, 2, 1, 2, 1, 1, 1, 1, 1/2, 1, 1],
-                              [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1/2, 1, 1, 1],
+                              [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1/2, 1, 1/2, 1],
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1/2, 0, 1],
-                              [1, 1, 1, 1, 1, 1, 1/2, 1, 1, 1, 2, 1, 1, 2, 1, 1/2, 1, 1/2, 1],
+                              [1, 1, 1, 1, 1, 1, 1/2, 1, 1, 1, 2, 1, 1, 2, 1, 1/2, 1/2, 1/2, 1],
                               [1, 1/2, 1/2, 1/2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1/2, 2, 1],
                               [1, 1/2, 1, 1, 1, 1, 2, 1/2, 1, 1, 1, 1, 1, 1, 2, 2, 1/2, 1, 1],
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
-
 SPECIAL_LOGIC_MOVES = {
-    "seismictoss": lambda attacker, defender: [int(attacker.level)] if "ghost" not in defender.types else None,
-    "nightshade": lambda attacker, defender: [int(attacker.level)] if "normal" not in defender.types else None,
+    "seismictoss": lambda attacker, defender: [int(attacker.level)] if ("ghost" not in defender.types and "gen1" not in config.pokemon_mode) else None,
+    "nightshade": lambda attacker, defender: [int(attacker.level)] if ("normal" not in defender.types and "psychic" not in defender.types and "gen1" not in config.pokemon_mode) else None,
     "superfang": lambda attacker, defender: [int(defender.hp / 2)] if "ghost" not in defender.types else None,
     "naturesmadness": lambda attacker, defender: [int(defender.hp / 2)],
     "finalgambit": lambda attacker, defender: [int(attacker.hp)] if "ghost" not in defender.types else None,

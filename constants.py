@@ -131,6 +131,18 @@ MEGA_EVOLVE_GENERATIONS = [
     "gen6",
     "gen7"
 ]
+
+OLD_GENS = [
+    "gen1ou",
+    "gen2",
+]
+
+UPDATED_TYPE_GENS = [
+    "gen6",
+    "gen7",
+    "gen8"
+]
+
 CAN_MEGA_EVO = "canMegaEvo"
 CAN_ULTRA_BURST = "canUltraBurst"
 CAN_DYNAMAX = "canDynamax"

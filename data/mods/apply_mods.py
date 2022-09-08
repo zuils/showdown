@@ -46,10 +46,11 @@ def apply_move_mods(gen_number):
 def apply_pokedex_mods(gen_number):
     logger.debug("Applying dex mod for gen {}".format(gen_number))
     for gen_number in reversed(range(gen_number, CURRENT_GEN)):
-        with open("{}/gen{}_pokedex_mods.json".format(PWD, gen_number), 'r') as f:
-            pokedex_mods = json.load(f)
-        for pokemon, modifications in pokedex_mods.items():
-            pokedex[pokemon].update(modifications)
+        if gen_number != 3:
+            with open("{}/gen{}_pokedex_mods.json".format(PWD, gen_number), 'r') as f:
+                pokedex_mods = json.load(f)
+            for pokemon, modifications in pokedex_mods.items():
+                pokedex[pokemon].update(modifications)
 
 
 def set_random_battle_sets(gen_number):
@@ -57,6 +58,16 @@ def set_random_battle_sets(gen_number):
     with open("{}/random_battle_sets_gen{}.json".format(PWD, gen_number), 'r') as f:
         data.random_battle_sets = json.load(f)
 
+def apply_gen_1_mods():
+    constants.REQUEST_DICT_ABILITY = "none"
+    apply_move_mods(1)
+    apply_pokedex_mods(1)
+    undo_physical_special_split()
+
+def apply_gen_2_mods():
+    apply_move_mods(2)
+    apply_pokedex_mods(2)
+    undo_physical_special_split()
 
 def apply_gen_3_mods():
     # no pokedex mods in gen3 (apparently)
@@ -107,6 +118,10 @@ def undo_physical_special_split():
 
 
 def apply_mods(game_mode):
+    if "gen1" in game_mode:
+        apply_gen_1_mods()
+    elif "gen2" in game_mode:
+        apply_gen_2_mods()
     if "gen3" in game_mode:
         apply_gen_3_mods()
     if "gen4" in game_mode:
