@@ -23,9 +23,10 @@ def set_most_likely_pokemon_from_team_datasets(pkmn):
         pkmn.ability = predicted_set.ability
         pkmn.item = predicted_set.item
         pkmn.set_spread(predicted_set.nature, predicted_set.evs)
+        pkmn.tera_type = predicted_set.tera_type
         logger.debug(
-            "Assumed set for opponent's {}:\t{} {} {} {} {}".format(
-                pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves)
+            "Assumed set for opponent's {}:\t{} {} {} {} {} {}".format(
+                pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves, pkmn.tera_type)
         )
         return
 
@@ -37,18 +38,18 @@ def set_most_likely_pokemon_from_team_datasets(pkmn):
         for mv in predicted_set.moves:
             pkmn.add_move(mv)
         pkmn.set_spread(predicted_set.nature, predicted_set.evs)
+        pkmn.tera_type = predicted_set.tera_type
         logger.debug(
-            "Assumed set for opponent's {}:\t{} {} {} {} {}".format(
-                pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves)
+            "Assumed set for opponent's {}:\t{} {} {} {} {} {}".format(
+                pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves, pkmn.tera_type)
         )
-        return
 
     pkmn.guess_most_likely_attributes()
 
     logger.debug(
-        "Assumed set for opponent's {}:\t{} {} {} {} {}".format(
-            pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves)
-        )
+        "Assumed set for opponent's {}:\t{} {} {} {} {} {}".format(
+            pkmn.name, pkmn.nature, pkmn.evs, pkmn.ability, pkmn.item, pkmn.moves, pkmn.tera_type)
+    )
 
 
 def prepare_battles(battle):
@@ -87,6 +88,7 @@ class BattleBot(Battle):
                 for pkmn_obj in self.opponent.reserve:
                     if pkmn_obj.name == pkmn:
                         split_info = pkmn_info.split("|")
+                        pkmn_obj.tera_type = split_info[0]
                         pkmn_obj.ability = split_info[1]
                         pkmn_obj.item = split_info[2]
                         pkmn_obj.set_spread(

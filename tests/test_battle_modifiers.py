@@ -2583,6 +2583,7 @@ class TestCheckSpeedRanges(unittest.TestCase):
 class TestGuessChoiceScarf(unittest.TestCase):
     def setUp(self):
         self.battle = Battle(None)
+        self.battle.generation = 'gen9'
         self.battle.user.name = 'p1'
         self.battle.opponent.name = 'p2'
 
@@ -3359,6 +3360,7 @@ class TestInactive(unittest.TestCase):
 class TestInactiveOff(unittest.TestCase):
     def setUp(self):
         self.battle = Battle(None)
+        self.battle.generation = 'gen9'
         self.battle.user.name = 'p1'
         self.battle.opponent.name = 'p2'
 
@@ -3723,6 +3725,7 @@ class TestNoInit(unittest.TestCase):
 class TestCheckChoiceItem(unittest.TestCase):
     def setUp(self):
         self.battle = Battle(None)
+        self.battle.generation = 'gen9'
         self.battle.user.name = 'p1'
         self.battle.opponent.name = 'p2'
 

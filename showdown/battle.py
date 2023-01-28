@@ -30,6 +30,7 @@ from data.helpers import get_all_possible_moves_for_random_battle
 from showdown.engine.objects import State
 from showdown.engine.objects import Side
 from showdown.engine.objects import Pokemon as TransposePokemon
+from showdown.engine.objects import MoveChoice
 
 from showdown.engine.helpers import remove_duplicate_spreads
 from showdown.engine.helpers import get_pokemon_info_from_condition
@@ -74,6 +75,7 @@ class Battle(ABC):
         self.wait = False
 
         self.battle_type = None
+        self.pokemon_mode = None
         self.generation = None
         self.time_remaining = None
 
@@ -117,9 +119,12 @@ class Battle(ABC):
 
     def mega_evolve_possible(self):
         return (
-                any(g in self.generation for g in constants.MEGA_EVOLVE_GENERATIONS) or
-                'nationaldex' in ShowdownConfig.pokemon_mode
+            any(g in self.generation for g in constants.MEGA_EVOLVE_GENERATIONS) or
+            'nationaldex' in ShowdownConfig.pokemon_mode
         )
+
+    def tera_possible(self):
+        return any(g in self.generation for g in constants.TERASTALLIZE_GENERATIONS)
 
     def prepare_battles(self, guess_mega_evo_opponent=True, join_moves_together=False):
         """Returns a list of battles based on this one
@@ -207,10 +212,10 @@ class Battle(ABC):
         for mon in self.opponent.reserve:
             opponent_reserve[mon.name] = TransposePokemon.from_state_pokemon_dict(mon.to_dict())
 
-        user = Side(user_active, user_reserve, copy(self.user.wish), copy(self.user.side_conditions), copy(self.user.future_sight))
-        opponent = Side(opponent_active, opponent_reserve, copy(self.opponent.wish), copy(self.opponent.side_conditions), copy(self.opponent.future_sight))
+        user = Side(user_active, user_reserve, copy(self.user.wish), copy(self.user.side_conditions), copy(self.user.future_sight), used_tera=self.user.used_tera)
+        opponent = Side(opponent_active, opponent_reserve, copy(self.opponent.wish), copy(self.opponent.side_conditions), copy(self.opponent.future_sight), used_tera=self.opponent.used_tera)
 
-        state = State(user, opponent, self.weather, self.field, self.trick_room)
+        state = State(user, opponent, self.weather, self.field, self.trick_room, tera_allowed=self.tera_possible())
         return state
 
     def get_all_options(self):
@@ -219,7 +224,7 @@ class Battle(ABC):
 
         # double faint or team preview
         if force_switch and wait:
-            user_options = self.user.get_switches() or [constants.DO_NOTHING_MOVE]
+            user_options = self.user.get_switches() or [MoveChoice(id=constants.DO_NOTHING_MOVE)]
 
             # edge-case for uturn or voltswitch killing
             if (
@@ -228,9 +233,9 @@ class Battle(ABC):
                     self.user.last_used_move.turn == self.turn
 
             ):
-                opponent_options = [constants.DO_NOTHING_MOVE]
+                opponent_options = [MoveChoice(id=constants.DO_NOTHING_MOVE)]
             else:
-                opponent_options = self.opponent.get_switches() or [constants.DO_NOTHING_MOVE]
+                opponent_options = self.opponent.get_switches() or [MoveChoice(id=constants.DO_NOTHING_MOVE)]
 
             return user_options, opponent_options
 
@@ -243,25 +248,39 @@ class Battle(ABC):
                     self.opponent.last_used_move.turn != self.turn and
                     self.user.last_used_move.turn == self.turn
             ):
-                opponent_options = [m.name for m in self.opponent.active.moves if not m.disabled] or [constants.DO_NOTHING_MOVE]
+                opponent_options = (
+                    [MoveChoice(m.name) for m in self.opponent.active.moves if not m.disabled] or
+                    [MoveChoice(id=constants.DO_NOTHING_MOVE)]
+                )
             else:
-                opponent_options = [constants.DO_NOTHING_MOVE]
+                opponent_options = [MoveChoice(id=constants.DO_NOTHING_MOVE)]
         elif wait:
             opponent_options = self.opponent.get_switches()
-            user_options = [constants.DO_NOTHING_MOVE]
+            user_options = [MoveChoice(id=constants.DO_NOTHING_MOVE)]
         else:
             user_forced_move = self.user.active.forced_move()
             if user_forced_move:
                 user_options = [user_forced_move]
             else:
-                user_options = [m.name for m in self.user.active.moves if not m.disabled]
+                user_options = [
+                    MoveChoice(m.name) for m in self.user.active.moves if not m.disabled
+                ]
+                if self.user.active.can_terastallize and self.tera_possible():
+                    for mv in user_options[:]:
+                        user_options.append(MoveChoice(mv.id, terastallize=True))
                 user_options += self.user.get_switches()
 
             opponent_forced_move = self.opponent.active.forced_move()
             if opponent_forced_move:
                 opponent_options = [opponent_forced_move]
             else:
-                opponent_options = [m.name for m in self.opponent.active.moves if not m.disabled] or [constants.DO_NOTHING_MOVE]
+                opponent_options = (
+                    [MoveChoice(m.name) for m in self.opponent.active.moves if not m.disabled] or
+                    [MoveChoice(id=constants.DO_NOTHING_MOVE)]
+                )
+                if not self.opponent.used_tera and self.tera_possible():
+                    for mv in opponent_options[:]:
+                        opponent_options.append(MoveChoice(mv.id, terastallize=True))
                 opponent_options += self.opponent.get_switches()
 
         return user_options, opponent_options
@@ -282,6 +301,7 @@ class Battler:
         self.trapped = False
         self.wish = (0, 0)
         self.future_sight = (0, 0)
+        self.used_tera = False
 
         self.account_name = None
 
@@ -333,8 +353,6 @@ class Battler:
                 self.active.name,
                 self.active.boosts,
                 self.active.volatile_statuses,
-                self.active.terastallized,
-                self.active.types
             )
 
         try:
@@ -358,15 +376,17 @@ class Battler:
                 pkmn.stats[constants.STAT_ABBREVIATION_LOOKUPS[stat]] = number
 
             pkmn.item = pkmn_dict[constants.ITEM] if pkmn_dict[constants.ITEM] else None
+            pkmn.tera_type = normalize_name(pkmn_dict.get(constants.PS_TERA_TYPE, pkmn.types[0]))
+            if pkmn_dict.get(constants.TERASTALLIZED):
+                pkmn.terastallized = True
+                pkmn.tera_type = normalize_name(pkmn_dict[constants.TERASTALLIZED])
+                pkmn.types = [pkmn.tera_type]
 
             if pkmn_dict[constants.ACTIVE]:
                 self.active = pkmn
                 if existing_conditions[0] == pkmn.name:
                     pkmn.boosts = existing_conditions[1]
                     pkmn.volatile_statuses = existing_conditions[2]
-                    if existing_conditions[3]:
-                        pkmn.terastallized = True
-                        pkmn.types = existing_conditions[4]
             else:
                 self.reserve.append(pkmn)
 
@@ -432,7 +452,7 @@ class Battler:
             it = filter(lambda p: p.hp > 0, self.reserve)
 
         for pkmn in it:
-            switches.append("{} {}".format(constants.SWITCH_STRING, pkmn.name))
+            switches.append(MoveChoice(id=pkmn.name, is_switch=True))
         return switches
 
     def to_dict(self):
@@ -477,7 +497,9 @@ class Pokemon:
         self.types = pokedex[self.name][constants.TYPES]
         self.item = constants.UNKNOWN_ITEM
 
+        self.can_terastallize = False
         self.terastallized = False
+        self.tera_type = self.types[0]
         self.fainted = False
         self.reviving = False
         self.moves = []
@@ -679,17 +701,17 @@ class Pokemon:
 
     def forced_move(self):
         if "phantomforce" in self.volatile_statuses:
-            return "phantomforce"
+            return MoveChoice("phantomforce")
         elif "shadowforce" in self.volatile_statuses:
-            return "shadowforce"
+            return MoveChoice("shadowforce")
         elif "dive" in self.volatile_statuses:
-            return "dive"
+            return MoveChoice("dive")
         elif "dig" in self.volatile_statuses:
-            return "dig"
+            return MoveChoice("dig")
         elif "bounce" in self.volatile_statuses:
-            return "bounce"
+            return MoveChoice("bounce")
         elif "fly" in self.volatile_statuses:
-            return "fly"
+            return MoveChoice("fly")
         else:
             return None
 
@@ -710,6 +732,7 @@ class Pokemon:
             constants.BOOSTS: self.boosts,
             constants.STATUS: self.status,
             constants.TERASTALLIZED: self.terastallized,
+            constants.TERA_TYPE: self.tera_type,
             constants.VOLATILE_STATUS: set(self.volatile_statuses),
             constants.MOVES: [m.to_dict() for m in self.moves]
         }

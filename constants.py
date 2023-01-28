@@ -66,6 +66,7 @@ MUTATOR_TOGGLE_TRICKROOM = "toggle_trickroom"
 MUTATOR_CHANGE_TYPE = "change_type"
 MUTATOR_CHANGE_ITEM = "change_item"
 MUTATOR_CHANGE_STATS = "change_stats"
+MUTATOR_TERASTALLIZE = "terastallize"
 
 
 DAMAGE = 'damage'
@@ -116,6 +117,8 @@ WEIGHT = "weightkg"
 NATURE = "nature"
 EVS = "evs"
 TERASTALLIZED = "terastallized"
+TERA_TYPE = "tera_type"
+PS_TERA_TYPE = "teraType"
 
 SIDE = "side"
 POKEMON = "pokemon"
@@ -132,6 +135,9 @@ IDENT = "ident"
 MEGA_EVOLVE_GENERATIONS = [
     "gen6",
     "gen7"
+]
+TERASTALLIZE_GENERATIONS = [
+    "gen9",
 ]
 CAN_MEGA_EVO = "canMegaEvo"
 CAN_ULTRA_BURST = "canUltraBurst"
