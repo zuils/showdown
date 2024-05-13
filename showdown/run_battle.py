@@ -128,6 +128,7 @@ async def start_random_battle(ps_websocket_client: PSWebsocketClient, pokemon_ba
 async def start_standard_battle(ps_websocket_client: PSWebsocketClient, pokemon_battle_type):
     battle, opponent_id, user_json = await initialize_battle_with_tag(ps_websocket_client, set_request_json=False)
     battle.battle_type = constants.STANDARD_BATTLE
+    battle.pokemon_mode = pokemon_battle_type
     battle.generation = pokemon_battle_type[:4]
 
     if battle.generation in constants.NO_TEAM_PREVIEW_GENS:

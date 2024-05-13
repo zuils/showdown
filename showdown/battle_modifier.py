@@ -437,9 +437,12 @@ def prepare(battle, split_msg):
 def terastallize(battle, split_msg):
     if is_opponent(battle, split_msg):
         pkmn = battle.opponent.active
+        side = battle.opponent
     else:
         pkmn = battle.user.active
+        side = battle.user
 
+    side.used_tera = True
     pkmn.terastallized = True
     pkmn.types = [normalize_name(split_msg[3])]
     logger.debug("Terastallized {}".format(pkmn.name))

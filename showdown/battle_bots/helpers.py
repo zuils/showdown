@@ -16,8 +16,8 @@ def format_decision(battle, decision):
     # If the pokemon can mega-evolve, it will
     # If the move can be used as a Z-Move, it will be
 
-    if decision.startswith(constants.SWITCH_STRING + " "):
-        switch_pokemon = decision.split("switch ")[-1]
+    if decision.is_switch:
+        switch_pokemon = decision.id
         for pkmn in battle.user.reserve:
             if pkmn.name == switch_pokemon:
                 message = "/switch {}".format(pkmn.index)
@@ -25,7 +25,7 @@ def format_decision(battle, decision):
         else:
             raise ValueError("Tried to switch to: {}".format(switch_pokemon))
     else:
-        message = "/choose move {}".format(decision)
+        message = "/choose move {}".format(decision.id)
         if battle.user.active.can_mega_evo:
             message = "{} {}".format(message, constants.MEGA)
         elif battle.user.active.can_ultra_burst:
@@ -35,11 +35,10 @@ def format_decision(battle, decision):
         if battle.user.active.can_dynamax and all(p.hp == 0 for p in battle.user.reserve):
             message = "{} {}".format(message, constants.DYNAMAX)
 
-        # only terastallize on last pokemon. Come back to this later because this is bad.
-        elif battle.user.active.can_terastallize and all(p.hp == 0 for p in battle.user.reserve):
+        elif battle.user.active.can_terastallize and decision.terastallize:
             message = "{} {}".format(message, constants.TERASTALLIZE)
 
-        if battle.user.active.get_move(decision).can_z:
+        if battle.user.active.get_move(decision.id).can_z:
             message = "{} {}".format(message, constants.ZMOVE)
 
     return [message, str(battle.rqid)]

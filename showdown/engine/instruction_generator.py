@@ -4,6 +4,7 @@ import constants
 import logging
 
 from .damage_calculator import type_effectiveness_modifier
+from .objects import MoveChoice, TransposeInstruction
 from .special_effects.abilities.on_switch_in import ability_on_switch_in
 from .special_effects.items.on_switch_in import item_on_switch_in
 from .special_effects.items.end_of_turn import item_end_of_turn
@@ -53,7 +54,30 @@ accuracy_multiplier_lookup = {
 }
 
 
+def get_pre_move_instructions(mutator, user_move_choice: MoveChoice, opponent_move_choice: MoveChoice):
+    instruction = TransposeInstruction(1.0, [], False)
 
+    if user_move_choice.terastallize:
+        instruction.instructions.append(
+            (
+                constants.MUTATOR_TERASTALLIZE,
+                constants.USER,
+                mutator.state.user.active.tera_type,
+                mutator.state.user.active.types,
+            )
+        )
+
+    if opponent_move_choice.terastallize:
+        instruction.instructions.append(
+            (
+                constants.MUTATOR_TERASTALLIZE,
+                constants.OPPONENT,
+                mutator.state.opponent.active.tera_type,
+                mutator.state.opponent.active.types,
+            )
+        )
+
+    return instruction
 
 
 def get_instructions_from_move_special_effect(mutator, attacking_side, attacking_pokemon, defending_pokemon, move_name, instructions):
